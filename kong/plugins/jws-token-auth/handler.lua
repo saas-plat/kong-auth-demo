@@ -4,7 +4,8 @@ local cjson = require "cjson.safe"
 
 local BasePlugin = require "kong.plugins.base_plugin"
 local responses = require "kong.tools.responses"
-local cache = require "kong.tools.database_cache"
+local cache = require "kong.cache"
+local utils = require "kong.tools.utils"
 
 local TokenAuthHandler = BasePlugin:extend()
 
@@ -69,12 +70,16 @@ local function query_and_validate_token(token, conf)
     return nil, err
   end
 
-  if not decoded.expiresAt then
-    return nil, decoded.error or resp
+  if decoded.errno>0 then
+    return nil, decoded.errmsg
   end
 
-  decoded.expiresAt = (decoded.expiresAt / 1000) - (8*60);
-  return decoded
+  if not decoded.data or not decoded.data.expiresAt then
+    return nil, decoded.errmsg or resp
+  end
+
+  decoded.data.expiresAt = (decoded.expiresAt / 1000) - (8*60);
+  return decoded.data
 end
 
 function TokenAuthHandler:new()
@@ -103,7 +108,7 @@ function TokenAuthHandler:access(conf)
   end
 
   local info
-  info, err = cache.get_or_set(KEY_PREFIX .. ":" .. token, 3600, query_and_validate_token, token, conf)
+  info, err = cache:get(KEY_PREFIX .. ":" .. token, nil, query_and_validate_token, token, conf)
 
   if err then
     ngx.log(ngx.ERR, "failed to validate token: ", err)
