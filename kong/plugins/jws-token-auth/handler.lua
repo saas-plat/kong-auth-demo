@@ -4,7 +4,7 @@ local cjson = require "cjson.safe"
 
 local BasePlugin = require "kong.plugins.base_plugin"
 local responses = require "kong.tools.responses"
-local cache = require "kong.cache"
+local singletons = require "kong.singletons"
 local utils = require "kong.tools.utils"
 
 local TokenAuthHandler = BasePlugin:extend()
@@ -44,7 +44,7 @@ end
 -- @return err
 local function query_and_validate_token(token, conf)
   ngx.log(ngx.DEBUG, "get token info from: ", conf.auth_server_url)
-  local response_body = {}
+  local response_body = {}    
   local res, code, response_headers = http.request{
     url = conf.auth_server_url,
     method = "GET",
@@ -108,7 +108,7 @@ function TokenAuthHandler:access(conf)
   end
 
   local info
-  info, err = cache:get(KEY_PREFIX .. ":" .. token, nil, query_and_validate_token, token, conf)
+  info, err = singletons.cache:get(KEY_PREFIX .. ":" .. token, nil, query_and_validate_token, token, conf)
 
   if err then
     ngx.log(ngx.ERR, "failed to validate token: ", err)
