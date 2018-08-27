@@ -78,7 +78,7 @@ local function query_and_validate_token(token, conf)
     return nil, decoded.errmsg or resp
   end
 
-  decoded.data.expiresAt = (decoded.expiresAt / 1000) - (8*60);
+  decoded.data.expiresAt = (decoded.data.expiresAt / 1000) - (8*60);
   return decoded.data
 end
 
@@ -125,12 +125,11 @@ function TokenAuthHandler:access(conf)
 
   -- mapping to get_headers
   if info and conf.mapping then
-    local prop, kv, ks
+    local prop, kv
     for k, v in pairs(utils.split(conf.mapping,',')) do
       kv = utils.split(v,'=')
-      ks = (kv[1] or kv[0]).split('.')
       prop = info
-      for i, f in pairs(ks) do
+      for i, f in pairs(utils.split(kv[1] or kv[0],'.')) do
         if prop then
           prop = prop[f]
         end
