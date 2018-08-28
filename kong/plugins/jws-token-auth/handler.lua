@@ -78,7 +78,7 @@ local function query_and_validate_token(token, conf)
     return nil, decoded.errmsg or resp
   end
 
-  decoded.data.expiresAt = (decoded.data.expiresAt / 1000) - (8*60);
+  -- decoded.data.expiresAt = (decoded.data.expiresAt / 1000) - (8*60);
   return decoded.data
 end
 
