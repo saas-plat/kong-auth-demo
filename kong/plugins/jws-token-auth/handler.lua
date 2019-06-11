@@ -44,7 +44,7 @@ end
 -- @return err
 local function query_and_validate_token(token, conf)
   ngx.log(ngx.DEBUG, "get token info from: ", conf.auth_server_url)
-  local response_body = {}    
+  local response_body = {}
   local res, code, response_headers = http.request{
     url = conf.auth_server_url,
     method = "GET",
@@ -70,7 +70,11 @@ local function query_and_validate_token(token, conf)
     return nil, err
   end
 
-  if decoded.errno>0 then
+  if decoded.errno >= 400 && decoded.errno < 500 then
+    return nil, nil
+  end
+
+  if decoded.errno > 0 then
     return nil, decoded.errmsg
   end
 
@@ -78,7 +82,6 @@ local function query_and_validate_token(token, conf)
     return nil, decoded.errmsg or resp
   end
 
-  -- decoded.data.expiresAt = (decoded.data.expiresAt / 1000) - (8*60);
   return decoded.data
 end
 
@@ -112,33 +115,17 @@ function TokenAuthHandler:access(conf)
 
   if err then
     ngx.log(ngx.ERR, "failed to validate token: ", err)
-    --if string.find(err,EXPIRES_ERR,1,true) ~= nil then
-      return responses.send(401, EXPIRES_ERR)
-    --end
-    --return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)
+    return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)
+  end
+
+  if not info then
+    return responses.send(401, EXPIRES_ERR)
   end
 
   if info.expiresAt < os.time() then
     return responses.send(401, EXPIRES_ERR)
   end
   ngx.log(ngx.DEBUG, "token will expire in ", info.expiresAt - os.time(), " seconds")
-
-  -- mapping to get_headers
-  if info and conf.mapping then
-    local prop, kv
-    for k, v in pairs(utils.split(conf.mapping,',')) do
-      kv = utils.split(v,'=')
-      prop = info
-      for i, f in pairs(utils.split(kv[1] or kv[0],'.')) do
-        if prop then
-          prop = prop[f]
-        end
-      end
-      if prop then
-        ngx.req.set_header(kv[0], prop);
-      end
-    end
-  end
 
 end
 
