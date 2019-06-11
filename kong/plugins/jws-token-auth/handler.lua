@@ -112,10 +112,10 @@ function TokenAuthHandler:access(conf)
 
   if err then
     ngx.log(ngx.ERR, "failed to validate token: ", err)
-    if EXPIRES_ERR == err then
+    --if string.find(err,EXPIRES_ERR,1,true) ~= nil then
       return responses.send(401, EXPIRES_ERR)
-    end
-    return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)
+    --end
+    --return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)
   end
 
   if info.expiresAt < os.time() then
