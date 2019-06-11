@@ -70,7 +70,7 @@ local function query_and_validate_token(token, conf)
     return nil, err
   end
 
-  if decoded.errno >= 400 && decoded.errno < 500 then
+  if decoded.errno >= 400 and decoded.errno < 500 then
     return nil, nil
   end
 
